@@ -4,6 +4,7 @@
 #include <fstream>
 #include <File.h>
 #include <vector>
+#include <iostream>
 
 class Archive {
 private:
@@ -11,6 +12,7 @@ private:
     uint64_t file_num_;
     std::string path_;
     uint16_t block_length_;
+    std::ofstream stream;
 
 public:
     Archive(std::string& path);
@@ -19,6 +21,8 @@ public:
              uint16_t block_length);
 
     void AddFile(std::string& filepath);
+
+    void PrintFileList();
 };
 
 
