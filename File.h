@@ -14,7 +14,7 @@ public:
     uint64_t size_e; // size of encoded file, bytes
     uint8_t padding; // bits
     uint8_t name_len; // length of the decoded filename
-
+    uint64_t shift; // position in archive
     File() = default;
 
     File(std::string& file_path);
@@ -24,6 +24,8 @@ public:
     void ReadChar(char& sym, std::ifstream* stream);
 
     void WriteChar(char& sym,  std::ofstream* stream);
+
+    void SetPath(std::string& archive_path);
 
 };
 

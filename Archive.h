@@ -4,12 +4,13 @@
 #include <vector>
 #include <iostream>
 #include <File.h>
-
+#include <map>
 
 
 class Archive {
 private:
-    std::vector<File> files_list_;
+   // std::vector<File> files_list_;
+    std::map <std::string, File> files;
     uint64_t file_num_;
     std::string path_;
     uint16_t block_length_;
@@ -17,10 +18,13 @@ private:
     std::ofstream output_stream_;
 
 public:
+    Archive() = default;
+
     Archive(std::string& path);
 
-    Archive(std::string& path, std::string* filepaths, uint64_t file_num,
-            uint16_t block_length);
+    ~Archive();
+
+    void Create(std::string& path, std::vector<std::string>& filepaths, uint16_t block_length);
 
     void AddFile(std::string& filepath);
 
@@ -37,6 +41,8 @@ public:
     void CloseOutputStream();
 
     void OpenOutputStream();
+
+    void Extract(std::string& filename);
 };
 
 

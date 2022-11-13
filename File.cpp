@@ -28,3 +28,9 @@ void File::WriteChar(char& sym, std::ofstream* stream) {
     buf[0] = sym;
     stream->write(buf, 1);
 }
+
+void File::SetPath(std::string& archive_path) {
+    size_t found;
+    found = archive_path.find_last_of("/\\");
+    path = archive_path.substr(0, found + 1) + name;
+}

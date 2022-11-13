@@ -185,7 +185,7 @@ std::vector<bool> DecodeBlock(std::vector<bool>& encoded, size_t block_beg,
 
     size_t pow = 1;
 
-    size_t ind_mistake; // sum of wrong' indexes == index of the mistake
+    size_t ind_mistake = 0; // sum of wrong' indexes == index of the mistake
 
     for (; pow < block_size; pow <<= 1) {
         bool flag = false;
@@ -208,7 +208,13 @@ std::vector<bool> DecodeBlock(std::vector<bool>& encoded, size_t block_beg,
         }
     }
 
-    // TODO: throw количество ошибок и результат
+    if (ind_mistake != 0) {
+        if (is_even) {
+            // TODO: сообщить о том что невозможно устранить ошибку
+        } else {
+            result[ind_mistake] = !result[ind_mistake];
+        }
+}
     return result;
 }
 
@@ -251,9 +257,7 @@ std::string DecodeString(size_t size_chars_d,
 }
 
 
-size_t DecodeNum(uint8_t num_bytes_d, Archive& archive,
-                 uint16_t block_length = 4) {
-    // block_length = 4 for File Headers
+size_t DecodeNum(uint8_t num_bytes_d, Archive& archive, uint16_t block_length = 8) {
     size_t result = 0;
     std::string str = DecodeString(num_bytes_d, archive);
     for (uint8_t i = 0; i < str.size(); ++i) {
@@ -264,8 +268,9 @@ size_t DecodeNum(uint8_t num_bytes_d, Archive& archive,
 
 
 void DecodeFile(File& dest, uint16_t block_length,
-                Archive& source, size_t num_bits_e) {
+                Archive& source, size_t size_e) {
 
+    size_t num_bits_e = size_e  * 8;
     size_t blocks_num = ceil((double) num_bits_e / block_length);
 
     std::vector<bool> decoded;
