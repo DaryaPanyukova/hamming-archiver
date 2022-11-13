@@ -8,23 +8,22 @@
 
 class File {
 public:
-    static const uint8_t kname_size = 9; // TODO: actually 255 or in fileheader: name_size, name
-
     std::string name;
     std::string path;
-    uint64_t size;
-    uint8_t padding;
+    uint64_t size_d; // size of encoded file, bytes
+    uint64_t size_e; // size of encoded file, bytes
+    uint8_t padding; // bits
+    uint8_t name_len; // length of the decoded filename
 
+    File() = default;
 
     File(std::string& file_path);
 
-    File(std::string
-         & file_name,
-         uint16_t file_size
-    );
-
+    File(std::string& file_name, uint16_t file_size);
 
     void ReadChar(char& sym, std::ifstream* stream);
+
+    void WriteChar(char& sym,  std::ofstream* stream);
 
 };
 

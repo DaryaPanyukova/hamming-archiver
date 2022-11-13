@@ -1,117 +1,64 @@
 #include "Archive.h"
+#include <Hamming.h>
+
 // TODO: delete[] char
 
-template<typename Type>
-char* f(Type peremennaya) {
-    char* masssivchik = new char[sizeof(peremennaya)];
-    for (size_t i = 0; i < sizeof(peremennaya); ++i) {
-        masssivchik[i] = static_cast<char>(peremennaya >> (i * 8));
-    }
-    return masssivchik;
-}
-
-size_t BufToInt(char* buf, size_t buf_size) {
-    char* end = buf + buf_size - 1;
-    size_t result = 0;
-    while (end != buf) {
-        result = (result << 8) + static_cast<uint8_t>(*end);
-        end--;
-    }
-    result = (result << 8) + static_cast<uint8_t>(*end);
-    return result;
-}
-
 Archive::Archive(std::string& path) {
-    std::ifstream archive;
     path_ = path;
-    archive.open(path_, std::ios::in | std::ios::binary);
-    if (!archive.is_open()) {
-        file_num_ = 0;
-    } else {
-        // read archive header
-        char block_length_buf[sizeof(block_length_)];
-        archive.read(block_length_buf, sizeof(block_length_));
-        block_length_ = BufToInt(block_length_buf, sizeof(block_length_));
+    OpenInputStream();
+    block_length_ = DecodeNum(sizeof(block_length_), *this);
+    file_num_ = 0;
 
-        std::cout << "----------------------------------------\n";
-        std::cout << "block length for Hamming code: " << block_length_ << '\n';
-        std::cout << "Files:" << '\n';
-        // TODO: decode
-
-        uint64_t cur_pos = archive.tellg();
-        while (archive.peek() != EOF) {
-            // read file_name
-            char buf_file_name[File::kname_size];
-            archive.read(buf_file_name, File::kname_size);
-            cur_pos += File::kname_size;
-
-            // read file_size
-            uint64_t file_size; // TODO: могут быть проблемы если поменять тип size внутри структуры File
-            char file_size_buf[sizeof(File::size)];
-            archive.read(file_size_buf, sizeof(File::size));
-            file_size = BufToInt(file_size_buf, sizeof(File::size));
-            cur_pos += sizeof(File::size);
-
-            std::string file_name(buf_file_name, File::kname_size);
-            File file(file_name, file_size);
-            files_list_.push_back(file);
-
-            cur_pos += file_size;
-            archive.seekg(cur_pos);
-        }
-        file_num_ = files_list_.size();
-        archive.close();
+    while (input_stream_.peek() != EOF) {
+        File new_file;
+        new_file.name_len = DecodeNum(sizeof(new_file.name_len), *this);
+        new_file.name = DecodeString(new_file.name_len, *this);
+        new_file.size_e = DecodeNum(sizeof(new_file.size_e), *this);
+        new_file.padding = DecodeNum(sizeof(new_file.padding), *this);
+        files_list_.push_back(new_file);
+        file_num_++;
+        input_stream_.seekg(new_file.size_e, std::ios::cur);
     }
+    CloseInputStream();
 }
 
 Archive::Archive(std::string& path, std::string* filepaths, uint64_t file_num,
                  uint16_t block_length) {
     path_ = path;
     block_length_ = block_length;
-    file_num_ = 0;
-    OpenInputStream();
+    file_num_ = file_num;
+    OpenOutputStream();
 
     // archive header
-    char* block_size_buf = f(block_length);
-    stream.write(block_size_buf, sizeof(block_length));
-    // TODO: code block_size
+    EncodeNum(block_length, *this);
 
-    // write files into archieve
-    for (int i = 0; i < file_num; ++i) {
+    // write files into archive
+    for (int i = 0; i < file_num_; ++i) {
         AddFile(filepaths[i]);
     }
-
-    file_num_ = file_num;
-    CloseStream();
+    CloseOutputStream();
 }
-
 
 void Archive::AddFile(std::string& filepath) {
     File new_file(filepath);
-    std::ifstream file;
-    file.open(filepath, std::ios::in | std::ios::binary);
-
-    file_num_++;
-    files_list_.push_back(new_file);
 
     // FileHeader
+    EncodeNum(new_file.name_len, *this); // length of decoded filename
+    EncodeString(new_file.name, new_file.name_len, *this); // filename
 
-    // filename
-    stream.write(new_file.name.c_str(), File::kname_size);
+    size_t ind = output_stream_.tellp();
+    output_stream_.seekp(ind + sizeof(new_file.size_e) * 2 +
+    sizeof(new_file.padding) * 2);
 
-    // size of file
-    char* file_size_buf = f(new_file.size);
-    stream.write(file_size_buf, sizeof(new_file.size));
+    EncodeFile(new_file, block_length_, *this);
 
-    // TODO: code file_name and file_size with Hamming code
+    output_stream_.seekp(ind);
+    EncodeNum(new_file.size_e, *this); // length of decoded filename
+    EncodeNum(new_file.padding, *this);
 
-    char buf[1];
-    for (int i = 0; i < new_file.size; ++i) {
-        file.read(buf, 1);
-        stream.write(buf, 1);
-    }
-    // TODO: code file with Hamming code
-    file.close();
+    output_stream_.seekp(new_file.size_e, std::ios::cur);
+
+    files_list_.push_back(new_file);
 }
 
 void Archive::PrintFileList() {
@@ -120,51 +67,44 @@ void Archive::PrintFileList() {
     }
 }
 
-void Archive::WriteCString(char* str, size_t size) {
-    stream.write(str, size);
-}
-
 void Archive::WriteChar(char sym) {
     char buf[1];
     buf[0] = sym;
-    stream.write(buf, 1);
+    output_stream_.write(buf, 1);
 }
 
-void Archive::CloseStream() {
-    if (!stream.is_open()) {
+void Archive::CloseInputStream() {
+    if (!input_stream_.is_open()) {
         return;
     }
-    stream.close();
+    input_stream_.close();
+}
+
+void Archive::CloseOutputStream() {
+    if (!output_stream_.is_open()) {
+        return;
+    }
+    output_stream_.close();
 }
 
 void Archive::OpenInputStream() {
-    if (stream.is_open()) {
+    if (output_stream_.is_open()) {
+        output_stream_.close();
         return;
     }
-    stream.open(path_, std::ios::in | std::ios::binary);
+    input_stream_.open(path_, std::ios::in | std::ios::binary);
 }
+
 void Archive::OpenOutputStream() {
-    if (stream.is_open()) {
-        return;
+    if (input_stream_.is_open()) {
+        input_stream_.close();
     }
-    stream.open(path_, std::ios::out | std::ios::binary);
+    output_stream_.open(path_, std::ios::out | std::ios::binary);
+
 }
 
 void Archive::ReadChar(char& sym) {
     char buf[1];
-    stream.read(buf, 1);
+    input_stream_.read(buf, 1);
     sym = buf[0];
 }
-/*
-Archive Archive::Merge(Archive& lhs, Archive& rhs, std::string& path) {
-    uint16_t block_length = 15; // TODO: какой в реальности должен быть размер?
-    Archive result;
-    // decode lhs, rhs
-    //
-
-    // write archive header - block_length
-    // записать тупо информацию друг за другом, обновить размеры
-}
-
-
-*/

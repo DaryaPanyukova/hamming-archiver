@@ -2,19 +2,29 @@
 
 
 File::File(std::string& file_path) {
+    padding = 0;
+    size_e = 0;
+
     path = file_path;
-    name = path.substr(path.find_last_of("/\\") + 1);;
+    name = path.substr(path.find_last_of("/\\") + 1);
+    name_len = name.size();
+
     std::ifstream file(path, std::ifstream::ate | std::ifstream::binary);
-    size = file.tellg(); // TODO: Is it actually the size of file?-
+    size_d = file.tellg(); // TODO: Is it actually the size of file?
     file.close();
 }
 
 File::File(std::string& file_name, uint16_t file_size) : name(file_name),
-                                                         size(file_size) {}
+                                                         size_e(file_size) {}
 
 void File::ReadChar(char& sym, std::ifstream* stream) {
     char buf[1];
-    stream->read(buf,
-                 1);
+    stream->read(buf, 1);
     sym = buf[0];
+}
+
+void File::WriteChar(char& sym, std::ofstream* stream) {
+    char buf[1];
+    buf[0] = sym;
+    stream->write(buf, 1);
 }

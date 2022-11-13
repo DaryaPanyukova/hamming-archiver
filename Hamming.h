@@ -1,26 +1,5 @@
-//#include <iostream>
-//#include <vector>
-//#include <cstring>
-//#include "Archive.h"
-//#include "File.h"
-//
-//
-//void AddChar(std::vector<bool>& dest, char sym);
-//
-//std::vector<bool> EncodeBlock(std::vector<bool>& block, size_t block_beg,
-//                              size_t block_end);
-//
-//void EncodeString(char* str, size_t size, Archive& dest, uint16_t block_length = 4);
-//
-//template<typename Type>
-//void EncodeNum(Type num, Archive& archive, uint16_t block_length = 4);
-
-
-#include <iostream>
-#include <vector>
 #include <cstring>
 #include "Archive.h"
-#include "File.h"
 #include <cmath>
 #include <fstream>
 
@@ -57,7 +36,7 @@ void EncodeBlock(std::vector<bool>& block, size_t block_beg,
     for (; pow < result.size(); pow = pow << 1) {
         bool flag = false;
         for (size_t j = pow; j < size; j += pow << 1) {
-            for (size_t i = 0; i + j + begin < size && i < pow; ++i) {
+            for (size_t i = 0; i + j < size && i < pow; ++i) {
                 flag = flag ^ result[i + j + begin];
             }
         }
@@ -69,7 +48,7 @@ void EncodeBlock(std::vector<bool>& block, size_t block_beg,
     }
 }
 
-void EncodeString(char* str, size_t size,
+void EncodeString(std::string& str, size_t size,
                   Archive& dest, uint16_t block_length = 4) {
     // block_length = 4 for File Headers
 
@@ -107,7 +86,7 @@ void EncodeString(char* str, size_t size,
 }
 
 void EncodeFile(File& file, uint16_t block_length, Archive& dest) {
-    size_t size_bits = file.size * 8;
+    size_t size_bits = file.size_d * 8;
     size_t blocks_num = ceil((double) size_bits / block_length);
 
     std::vector<bool> encoded;
@@ -138,6 +117,7 @@ void EncodeFile(File& file, uint16_t block_length, Archive& dest) {
                 }
             }
             dest.WriteChar(tmp);
+            file.size_e++;
         }
         for (uint8_t j = 0; k < encoded.size(); ++k, ++j) {
             encoded[j] = encoded[k];
@@ -148,7 +128,24 @@ void EncodeFile(File& file, uint16_t block_length, Archive& dest) {
         encoded.resize(encoded.size() % 8);
         decoded.resize(decoded.size() - cur_block_size);
     }
-    file.padding = encoded.size();
+    file.padding = (8 - encoded.size()) % 8;
+    if (file.padding == 0) {
+        return;
+    }
+    for (uint8_t i = file.padding; i < 8; ++i) {
+        encoded.push_back(false);
+    }
+    char tmp = 0;
+    for (uint8_t j = 0; j < 8; j++) {
+        bool value = encoded[7 - j];
+        if (value) {
+            tmp = tmp | (1 << j);
+        } else {
+            tmp = tmp & (~(1 << j));
+        }
+    }
+    dest.WriteChar(tmp);
+    file.size_e++;
 }
 
 
@@ -171,7 +168,8 @@ void EncodeNum(Type num, Archive& archive, uint16_t block_length = 4) {
         }
         str[size - 1 - i / 8] = sym;
     }
-    EncodeString(str, size, archive);
+    std::string tmp(str, size);
+    EncodeString(tmp, size, archive);
 }
 
 
@@ -228,7 +226,6 @@ std::string DecodeString(size_t size_chars_d,
         AddChar(encoded, sym);
     }
 
-
     size_t blocks_num = encoded.size() / block_length;
 
     for (size_t block_ind = 0; block_ind < blocks_num; ++block_ind) {
@@ -254,11 +251,11 @@ std::string DecodeString(size_t size_chars_d,
 }
 
 
-size_t DecodeNum(uint8_t num_bits_d, Archive& archive,
+size_t DecodeNum(uint8_t num_bytes_d, Archive& archive,
                  uint16_t block_length = 4) {
     // block_length = 4 for File Headers
     size_t result = 0;
-    std::string str = DecodeString(num_bits_d / 8, archive);
+    std::string str = DecodeString(num_bytes_d, archive);
     for (uint8_t i = 0; i < str.size(); ++i) {
         result = (result << 8) + static_cast<uint8_t >(str[i]);
     }
@@ -266,48 +263,52 @@ size_t DecodeNum(uint8_t num_bits_d, Archive& archive,
 }
 
 
+void DecodeFile(File& dest, uint16_t block_length,
+                Archive& source, size_t num_bits_e) {
 
-void DecodeFile(File& dest, uint16_t block_length, Archive& source) {
-    size_t size_bits = dest.size * 8;
-    size_t blocks_num = ceil((double) size_bits / block_length);
-
-    std::vector<bool> encoded;
-    std::ofstream input;
-    input.open(dest.path, std::ios::out | std::ios::binary);
+    size_t blocks_num = ceil((double) num_bits_e / block_length);
 
     std::vector<bool> decoded;
+    std::ofstream output;
+    output.open(dest.path, std::ios::out | std::ios::binary);
+
+    std::vector<bool> encoded;
     for (size_t i = 0; i < blocks_num; ++i) {
 
-        size_t cur_block_size = size_bits - block_length * i < block_length ?
-                                size_bits - block_length * i : block_length;
-        while (decoded.size() < cur_block_size) {
-            char sym;
-            dest.ReadChar(sym, &input);
-            AddChar(decoded, sym);
+        size_t cur_block_size = block_length;
+        if (i == blocks_num - 1) {
+            cur_block_size = block_length - dest.padding;
         }
-        EncodeBlock(decoded, 0, cur_block_size, encoded);
+
+        while (encoded.size() < cur_block_size) {
+            char sym;
+            source.ReadChar(sym);
+            AddChar(encoded, sym);
+        }
+        DecodeBlock(encoded, 0, cur_block_size, decoded);
 
         size_t k = 0;
-        for (k = 0; k + 7 < encoded.size(); k += 8) {
+        for (k = 0; k + 7 < decoded.size(); k += 8) {
             char tmp = 0;
             for (uint8_t j = 0; j < 8; j++) {
-                bool value = encoded[k + 7 - j];
+                bool value = decoded[k + 7 - j];
                 if (value) {
                     tmp = tmp | (1 << j);
                 } else {
                     tmp = tmp & (~(1 << j));
                 }
             }
-            dest.WriteChar(tmp);
+            dest.WriteChar(tmp, &output);
         }
-        for (uint8_t j = 0; k < encoded.size(); ++k, ++j) {
-            encoded[j] = encoded[k];
+
+        for (uint8_t j = 0; k < decoded.size(); ++k, ++j) {
+            decoded[j] = decoded[k];
         }
-        for (size_t j = cur_block_size; j < decoded.size(); ++j) {
-            decoded[j - cur_block_size] = decoded[j];
+        for (size_t j = cur_block_size; j < encoded.size(); ++j) {
+            encoded[j - cur_block_size] = encoded[j];
         }
-        encoded.resize(encoded.size() % 8);
-        decoded.resize(decoded.size() - cur_block_size);
+        decoded.resize(decoded.size() % 8);
+        encoded.resize(encoded.size() - cur_block_size);
     }
-    dest.padding = encoded.size();
+    output.close();
 }

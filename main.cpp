@@ -1,12 +1,9 @@
 #include <iostream>
 #include <Archive.h>
-#include <fstream>
 #include <vector>
-#include <cstring>
-#include <Hamming.h>
-#include <File.h>
 
-/*
+
+
 int main(int argc, char** argv) {
     std::string type = "decode";
     if (type == "code") {
@@ -20,34 +17,36 @@ int main(int argc, char** argv) {
         filenames[0] = first;
         filenames[1] = second;
 
-        Archive archive(archive_path, filenames, file_num, 111);
+        Archive archive(archive_path, filenames, file_num, 17);
     } else {
         std::string archive_path = "D:\\ITMOlabs\\basics_c++\\archive.haf";
         Archive archive(archive_path);
         archive.PrintFileList();
     }
 }
-*/
 
 
+/*
 int main() {
     std::string archive_path = "D:\\ITMOlabs\\basics_c++\\archive.haf";
 
     Archive archive(archive_path);
 
     archive.OpenOutputStream();
-    uint32_t k = 18565;
-    EncodeNum(k, archive);
+    std::string filename = "D:\\ITMOlabs\\basics_c++\\file2.txt";
+    File original(filename);
+    EncodeFile(original, 13, archive);
     archive.CloseStream();
 
     archive.OpenInputStream();
-    size_t res = DecodeNum(32, archive);
+    std::string filename_decoded =  "D:\\ITMOlabs\\basics_c++\\file2_decoded.txt";
+    File decoded(filename_decoded);
+    decoded.padding = original.padding;
+    DecodeFile(decoded, 19, archive, 120);
     archive.CloseStream();
 
-
-    std::cout << '\n';
-    std::cout << res;
     //  std::string path = "D:\\ITMOlabs\\basics_c++\\file1.txt";
 
 
 }
+*/

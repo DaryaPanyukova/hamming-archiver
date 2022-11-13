@@ -6,13 +6,15 @@
 #include <File.h>
 
 
+
 class Archive {
 private:
-    std::vector <File> files_list_;
+    std::vector<File> files_list_;
     uint64_t file_num_;
     std::string path_;
     uint16_t block_length_;
-    std::fstream stream;
+    std::ifstream input_stream_;
+    std::ofstream output_stream_;
 
 public:
     Archive(std::string& path);
@@ -24,20 +26,18 @@ public:
 
     void PrintFileList();
 
-    void WriteCString(char* str, size_t size);
-
     void WriteChar(char sym);
 
     void ReadChar(char& sym);
 
-    Archive Merge(Archive& lhs, Archive& rhs, std::string& path);
-
     void OpenInputStream();
-    void CloseStream();
+
+    void CloseInputStream();
+
+    void CloseOutputStream();
+
     void OpenOutputStream();
 };
-
-
 
 
 #endif //LABWORK_4_DARYAPANYUKOVA_ARCHIVE_H
