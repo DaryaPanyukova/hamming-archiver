@@ -11,3 +11,10 @@ File::File(std::string& file_path) {
 
 File::File(std::string& file_name, uint16_t file_size) : name(file_name),
                                                          size(file_size) {}
+
+void File::ReadChar(char& sym, std::ifstream* stream) {
+    char buf[1];
+    stream->read(buf,
+                 1);
+    sym = buf[0];
+}

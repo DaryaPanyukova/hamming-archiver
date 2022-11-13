@@ -10,7 +10,6 @@ char* f(Type peremennaya) {
     return masssivchik;
 }
 
-
 size_t BufToInt(char* buf, size_t buf_size) {
     char* end = buf + buf_size - 1;
     size_t result = 0;
@@ -70,21 +69,20 @@ Archive::Archive(std::string& path, std::string* filepaths, uint64_t file_num,
     path_ = path;
     block_length_ = block_length;
     file_num_ = 0;
-    stream.open(path_, std::ios::out | std::ios::binary);
-
+    OpenInputStream();
 
     // archive header
-
     char* block_size_buf = f(block_length);
     stream.write(block_size_buf, sizeof(block_length));
+    // TODO: code block_size
 
-   // write files into archieve
-
+    // write files into archieve
     for (int i = 0; i < file_num; ++i) {
         AddFile(filepaths[i]);
     }
+
     file_num_ = file_num;
-    stream.close();
+    CloseStream();
 }
 
 
@@ -100,7 +98,6 @@ void Archive::AddFile(std::string& filepath) {
 
     // filename
     stream.write(new_file.name.c_str(), File::kname_size);
-
 
     // size of file
     char* file_size_buf = f(new_file.size);
@@ -118,7 +115,56 @@ void Archive::AddFile(std::string& filepath) {
 }
 
 void Archive::PrintFileList() {
-    for (auto elem: files_list_) {
-          std::cout << elem.name << '\n';
+    for (size_t i = 0; i < file_num_; ++i) {
+        std::cout << files_list_[i].name << '\n';
     }
 }
+
+void Archive::WriteCString(char* str, size_t size) {
+    stream.write(str, size);
+}
+
+void Archive::WriteChar(char sym) {
+    char buf[1];
+    buf[0] = sym;
+    stream.write(buf, 1);
+}
+
+void Archive::CloseStream() {
+    if (!stream.is_open()) {
+        return;
+    }
+    stream.close();
+}
+
+void Archive::OpenInputStream() {
+    if (stream.is_open()) {
+        return;
+    }
+    stream.open(path_, std::ios::in | std::ios::binary);
+}
+void Archive::OpenOutputStream() {
+    if (stream.is_open()) {
+        return;
+    }
+    stream.open(path_, std::ios::out | std::ios::binary);
+}
+
+void Archive::ReadChar(char& sym) {
+    char buf[1];
+    stream.read(buf, 1);
+    sym = buf[0];
+}
+/*
+Archive Archive::Merge(Archive& lhs, Archive& rhs, std::string& path) {
+    uint16_t block_length = 15; // TODO: какой в реальности должен быть размер?
+    Archive result;
+    // decode lhs, rhs
+    //
+
+    // write archive header - block_length
+    // записать тупо информацию друг за другом, обновить размеры
+}
+
+
+*/
