@@ -24,7 +24,7 @@ std::string GetPath(const std::string& full_path) {
     return full_path.substr(0, found + 1);
 }
 
-Archive::Archive(std::string& path) {
+Archive::Archive(const std::string& path) {
     filename_ = path;
     path_ = GetPath(path);
 
@@ -52,8 +52,8 @@ Archive::Archive(std::string& path) {
     CloseInputStream();
 }
 
-void Archive::Create(std::string& path, std::vector<std::string>& filepaths,
-                     uint16_t block_length) {
+void Archive::Create(const std::string& path,
+                     std::vector<std::string>& filepaths, uint16_t block_length) {
     filename_ = path;
     block_length_ = block_length;
     OpenOutputStream();
@@ -99,9 +99,7 @@ void Archive::PrintFileList() {
 }
 
 void Archive::WriteChar(char sym) {
-    char buf[1];
-    buf[0] = sym;
-    output_stream_.write(buf, 1);
+    output_stream_.write(&sym, 1);
 }
 
 void Archive::CloseInputStream() {
@@ -141,9 +139,7 @@ void Archive::OpenOutputStream() {
 }
 
 void Archive::ReadChar(char& sym) {
-    char buf[1];
-    input_stream_.read(buf, 1);
-    sym = buf[0];
+    input_stream_.read(&sym, 1);
 }
 
 Archive::~Archive() {
@@ -152,10 +148,10 @@ Archive::~Archive() {
 }
 
 void Archive::Extract(std::string& filename) {
-    File file = files[filename];
+    File* file = &files[filename];
     OpenInputStream();
-    input_stream_.seekg(file.shift_filedata);
-    DecodeFile(file, block_length_, *this, file.size_e);
+    input_stream_.seekg(file->shift_filedata);
+    DecodeFile(*file, block_length_, *this, file->size_e);
     CloseInputStream();
 }
 
@@ -193,7 +189,6 @@ void Archive::AddArchive(Archive& new_archive) {
     }
     new_archive.CloseInputStream();
 }
-
 
 void Archive::RemoveFile(const std::string& filename) {
 

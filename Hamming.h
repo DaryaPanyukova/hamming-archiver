@@ -11,7 +11,7 @@ void AddChar(std::vector<bool>& dest, char sym) {
     }
 }
 
-void EncodeBlock(std::vector<bool>& block, size_t block_beg,
+void EncodeBlock(const std::vector<bool>& block, size_t block_beg,
                  size_t block_end, std::vector<bool>& result) {
     uint64_t pow = 1;
 
@@ -48,7 +48,7 @@ void EncodeBlock(std::vector<bool>& block, size_t block_beg,
     }
 }
 
-void EncodeString(std::string& str, size_t size,
+void EncodeString(const std::string& str, size_t size,
                   Archive& dest, uint16_t block_length = 4) {
     // block_length = 4 for File Headers
 
@@ -100,7 +100,7 @@ void EncodeFile(File& file, uint16_t block_length, Archive& dest) {
                                 size_bits - block_length * i : block_length;
         while (decoded.size() < cur_block_size) {
             char sym;
-            file.ReadChar(sym, &input);
+            file.ReadChar(sym, input);
             AddChar(decoded, sym);
         }
         EncodeBlock(decoded, 0, cur_block_size, encoded);
@@ -169,12 +169,13 @@ void EncodeNum(Type num, Archive& archive, uint16_t block_length = 4) {
         str[size - 1 - i / 8] = sym;
     }
     std::string tmp(str, size);
-    EncodeString(tmp, size, archive);
+    EncodeString(tmp, size, archive, block_length);
 }
 
 
-std::vector<bool> DecodeBlock(std::vector<bool>& encoded, size_t block_beg,
-                              size_t block_end, std::vector<bool>& result) {
+std::vector<bool>
+DecodeBlock(const std::vector<bool>& encoded, size_t block_beg,
+            size_t block_end, std::vector<bool>& result) {
     size_t block_size = block_end - block_beg;
 
     bool is_even = false; // even amount of mistakes
@@ -210,11 +211,11 @@ std::vector<bool> DecodeBlock(std::vector<bool>& encoded, size_t block_beg,
 
     if (ind_mistake != 0) {
         if (!is_even) {
-           std::cerr << "File corruption" << '\n';
+            std::cerr << "File corruption" << '\n';
         } else {
-      //      result[ind_mistake] = !result[ind_mistake];
+            //      result[ind_mistake] = !result[ind_mistake];
         }
-}
+    }
     return result;
 }
 
@@ -222,7 +223,8 @@ std::string DecodeString(size_t size_chars_d,
                          Archive& source, uint16_t block_length = 8) {
     // block_length = 4 for File Headers
 
-    size_t size_chars_e = size_chars_d * 2; // len(encoded string) = 2 * len(decoded string)
+    size_t size_chars_e =
+            size_chars_d * 2; // len(encoded string) = 2 * len(decoded string)
     std::vector<bool> decoded;
     std::vector<bool> encoded;
 
@@ -257,9 +259,10 @@ std::string DecodeString(size_t size_chars_d,
 }
 
 
-size_t DecodeNum(uint8_t num_bytes_d, Archive& archive, uint16_t block_length = 8) {
+size_t
+DecodeNum(uint8_t num_bytes_d, Archive& archive, uint16_t block_length = 8) {
     size_t result = 0;
-    std::string str = DecodeString(num_bytes_d, archive);
+    std::string str = DecodeString(num_bytes_d, archive, block_length);
     for (uint8_t i = 0; i < str.size(); ++i) {
         result = (result << 8) + static_cast<uint8_t >(str[i]);
     }
@@ -270,7 +273,7 @@ size_t DecodeNum(uint8_t num_bytes_d, Archive& archive, uint16_t block_length = 
 void DecodeFile(File& dest, uint16_t block_length,
                 Archive& source, size_t size_e) {
 
-    size_t num_bits_e = size_e  * 8;
+    size_t num_bits_e = size_e * 8;
     size_t blocks_num = ceil((double) num_bits_e / block_length);
 
     std::vector<bool> decoded;
@@ -303,7 +306,7 @@ void DecodeFile(File& dest, uint16_t block_length,
                     tmp = tmp & (~(1 << j));
                 }
             }
-            dest.WriteChar(tmp, &output);
+            dest.WriteChar(tmp, output);
         }
 
         for (uint8_t j = 0; k < decoded.size(); ++k, ++j) {

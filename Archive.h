@@ -9,7 +9,7 @@
 
 class Archive {
 private:
-    std::map <std::string, File> files;
+    std::map<std::string, File> files;
     std::string filename_;
     std::string path_;
     uint16_t block_length_;
@@ -19,11 +19,12 @@ private:
 public:
     Archive() = default;
 
-    Archive(std::string& path);
+    Archive(const std::string& path);
 
     ~Archive();
 
-    void Create(std::string& path, std::vector<std::string>& filepaths, uint16_t block_length = 4);
+    void Create(const std::string& path, std::vector<std::string>& filepaths,
+                uint16_t block_length = 4);
 
     void AddFile(const std::string& filepath);
 

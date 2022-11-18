@@ -5,7 +5,6 @@
 #include <iostream>
 #include <fstream>
 
-
 class File {
 public:
     std::string name;
@@ -16,18 +15,18 @@ public:
     uint8_t name_len; // length of the decoded filename
     uint64_t shift_filedata; // position in archive
     uint64_t shift_fileheader;
+
     File() = default;
 
     File(const std::string& file_path);
 
-    File(std::string& file_name, uint16_t file_size);
+    File(const std::string& file_name, uint16_t file_size);
 
-    void ReadChar(char& sym, std::ifstream* stream);
+    void ReadChar(char& sym, std::ifstream& stream);
 
-    void WriteChar(char& sym,  std::ofstream* stream);
+    void WriteChar(char& sym, std::ofstream& stream);
 
-    void SetPath(std::string& archive_path);
-
+    void SetPath(const std::string& archive_path);
 };
 
 

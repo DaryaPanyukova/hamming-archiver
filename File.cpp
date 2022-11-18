@@ -1,6 +1,5 @@
 #include "File.h"
 
-
 File::File(const std::string& file_path) {
     padding = 0;
     size_e = 0;
@@ -14,21 +13,17 @@ File::File(const std::string& file_path) {
     file.close();
 }
 
-File::File(std::string& file_name, uint16_t file_size) : name(file_name),
-                                                         size_e(file_size) {}
+File::File(const std::string& file_name, uint16_t file_size) : name(file_name),
+                                                               size_e(file_size) {}
 
-void File::ReadChar(char& sym, std::ifstream* stream) {
-    char buf[1];
-    stream->read(buf, 1);
-    sym = buf[0];
+void File::ReadChar(char& sym, std::ifstream& stream) {
+    stream.read(&sym, 1);
 }
 
-void File::WriteChar(char& sym, std::ofstream* stream) {
-    char buf[1];
-    buf[0] = sym;
-    stream->write(buf, 1);
+void File::WriteChar(char& sym, std::ofstream& stream) {
+    stream.write(&sym, 1);
 }
 
-void File::SetPath(std::string& archive_path) {
+void File::SetPath(const std::string& archive_path) {
     path = archive_path + name;
 }
