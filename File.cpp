@@ -30,7 +30,5 @@ void File::WriteChar(char& sym, std::ofstream* stream) {
 }
 
 void File::SetPath(std::string& archive_path) {
-    size_t found;
-    found = archive_path.find_last_of("/\\");
-    path = archive_path.substr(0, found + 1) + name;
+    path = archive_path + name;
 }

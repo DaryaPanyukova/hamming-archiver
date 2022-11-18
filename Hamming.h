@@ -178,7 +178,7 @@ std::vector<bool> DecodeBlock(std::vector<bool>& encoded, size_t block_beg,
     size_t block_size = block_end - block_beg;
 
     bool is_even = false; // even amount of mistakes
-    for (size_t i = block_beg; i < block_end; ++i) {
+    for (size_t i = block_beg + 1; i < block_end; ++i) {
         is_even = is_even ^ encoded[i];
     }
     is_even = (is_even == encoded[block_beg]);
@@ -189,7 +189,7 @@ std::vector<bool> DecodeBlock(std::vector<bool>& encoded, size_t block_beg,
 
     for (; pow < block_size; pow <<= 1) {
         bool flag = false;
-        for (size_t i = pow + 1; pow < block_size; pow += pow << 1) {
+        for (size_t i = pow + 1; i < block_size; i += pow << 1) {
             for (size_t j = 0; i + j < block_size && j < pow; ++j) {
                 flag = flag ^ encoded[i + j + block_beg];
             }
@@ -209,10 +209,10 @@ std::vector<bool> DecodeBlock(std::vector<bool>& encoded, size_t block_beg,
     }
 
     if (ind_mistake != 0) {
-        if (is_even) {
-            std::cerr << "File corruption";
+        if (!is_even) {
+           std::cerr << "File corruption" << '\n';
         } else {
-            result[ind_mistake] = !result[ind_mistake];
+      //      result[ind_mistake] = !result[ind_mistake];
         }
 }
     return result;

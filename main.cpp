@@ -21,28 +21,31 @@ int main(int argc, char** argv) {
 
     for (size_t i = 1; i < argc; ++i) {
         char* term = argv[i];
-        if (strcmp(term, "--create") == 0 || strcmp(term, "--c") == 0) {
+        if (strcmp(term, "--create") == 0 || strcmp(term, "-c") == 0) {
             options.create = true;
-        } else if (strcmp(term, "--list") == 0 || strcmp(term, "--l") == 0) {
+        } else if (strcmp(term, "--list") == 0 || strcmp(term, "-l") == 0) {
             options.list = true;
-        } else if (strcmp(term, "--extract") == 0 || strcmp(term, "--x") == 0) {
+        } else if (strcmp(term, "--extract") == 0 || strcmp(term, "-x") == 0) {
             options.extract = true;
-        } else if (strcmp(term, "--append") == 0 || strcmp(term, "--a") == 0) {
+        } else if (strcmp(term, "--append") == 0 || strcmp(term, "-a") == 0) {
             options.append = true;
-        } else if (strcmp(term, "--delete") == 0 || strcmp(term, "--d") == 0) {
+        } else if (strcmp(term, "--delete") == 0 || strcmp(term, "-d") == 0) {
             options.del = true;
         } else if (strcmp(term, "--concatenate") == 0 ||
-                   strcmp(term, "--A") == 0) {
+                   strcmp(term, "-A") == 0) {
             options.concatenate = true;
         } else if (strcmp(term, "--hamming") == 0 ||
-                   strcmp(term, "--h") == 0) {
-            block_size = atoi(argv[i + 1]);
+                   strcmp(term, "-h") == 0) {
+            block_size = atoi(argv[++i]);
+        } else if (strcmp(term, "-f") == 0) {
+            archive_filepath = argv[++i];
         } else {
             std::string tmp = term;
             if (tmp.size() <= 7 || tmp.substr(7) != "--file=") {
                 filepaths.push_back(term);
-            } else
+            } else {
                 archive_filepath = tmp.substr(7, tmp.size());
+            }
         }
     }
 

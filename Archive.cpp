@@ -18,9 +18,16 @@ uint16_t GetEncodedLength(uint16_t block_length_d) {
     return result + 1;
 }
 
+std::string GetPath(const std::string& full_path) {
+    size_t found;
+    found = full_path.find_last_of("/\\");
+    return full_path.substr(0, found + 1);
+}
 
 Archive::Archive(std::string& path) {
-    path_ = path;
+    filename_ = path;
+    path_ = GetPath(path);
+
     OpenInputStream();
     if (!input_stream_.is_open()) {
         return;
@@ -47,7 +54,7 @@ Archive::Archive(std::string& path) {
 
 void Archive::Create(std::string& path, std::vector<std::string>& filepaths,
                      uint16_t block_length) {
-    path_ = path;
+    filename_ = path;
     block_length_ = block_length;
     OpenOutputStream();
 
@@ -119,7 +126,7 @@ void Archive::OpenInputStream() {
     if (input_stream_.is_open()) {
         return;
     }
-    input_stream_.open(path_, std::ios::in | std::ios::binary);
+    input_stream_.open(filename_, std::ios::in | std::ios::binary);
 }
 
 void Archive::OpenOutputStream() {
@@ -129,7 +136,7 @@ void Archive::OpenOutputStream() {
     if (output_stream_.is_open()) {
         return;
     }
-    output_stream_.open(path_, std::ios::out | std::ios::binary);
+    output_stream_.open(filename_, std::ios::out | std::ios::binary);
 
 }
 
@@ -178,12 +185,15 @@ void Archive::ExtractTo(const std::string& filename,
 void Archive::AddArchive(Archive& new_archive) {
     new_archive.OpenInputStream();
 
-    for (auto elem: files) {
-        ExtractTo(elem.first, "tmp.txt");
-        AddFile("tmp.txt");
+    for (auto elem: new_archive.files) {
+        std::string tmp_file = path_ + elem.first;
+        new_archive.ExtractTo(elem.first, tmp_file);
+        AddFile(tmp_file);
+        std::remove(tmp_file.c_str());
     }
     new_archive.CloseInputStream();
 }
+
 
 void Archive::RemoveFile(const std::string& filename) {
 
@@ -194,7 +204,9 @@ void Archive::RemoveFile(const std::string& filename) {
     uint64_t erase_from = remove_file.shift_fileheader;
     uint64_t erase_to = remove_file.shift_filedata + remove_file.size_e;
 
-    std::string new_archive_name = "tmp.haf";
+
+    std::string new_archive_name =
+            filename_.substr(0, filename_.find_last_of("/\\") + 1) + "tmp.haf";
     std::ofstream new_archive;
     new_archive.open(new_archive_name, std::ios::out | std::ios::binary);
 
@@ -211,7 +223,7 @@ void Archive::RemoveFile(const std::string& filename) {
     }
     new_archive.close();
     CloseInputStream();
-    std::string name = path_.substr(path_.find_last_of("/\\") + 1);
-    std::remove(path_.c_str());
-    std::rename(new_archive_name.c_str(), name.c_str());
+
+    std::remove(filename_.c_str());
+    std::rename(new_archive_name.c_str(), filename_.c_str());
 }

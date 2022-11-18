@@ -10,6 +10,7 @@
 class Archive {
 private:
     std::map <std::string, File> files;
+    std::string filename_;
     std::string path_;
     uint16_t block_length_;
     std::ifstream input_stream_;
