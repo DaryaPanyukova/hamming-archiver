@@ -1,7 +1,7 @@
 #include "File.h"
 
 
-File::File(std::string& file_path) {
+File::File(const std::string& file_path) {
     padding = 0;
     size_e = 0;
 
@@ -10,7 +10,7 @@ File::File(std::string& file_path) {
     name_len = name.size();
 
     std::ifstream file(path, std::ifstream::ate | std::ifstream::binary);
-    size_d = file.tellg(); // TODO: Is it actually the size of file?
+    size_d = file.tellg();
     file.close();
 }
 

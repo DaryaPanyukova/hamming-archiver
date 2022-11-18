@@ -210,7 +210,7 @@ std::vector<bool> DecodeBlock(std::vector<bool>& encoded, size_t block_beg,
 
     if (ind_mistake != 0) {
         if (is_even) {
-            // TODO: сообщить о том что невозможно устранить ошибку
+            std::cerr << "File corruption";
         } else {
             result[ind_mistake] = !result[ind_mistake];
         }

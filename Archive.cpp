@@ -21,7 +21,6 @@ uint16_t GetEncodedLength(uint16_t block_length_d) {
 
 Archive::Archive(std::string& path) {
     path_ = path;
-    file_num_ = 0;
     OpenInputStream();
     if (!input_stream_.is_open()) {
         return;
@@ -32,15 +31,15 @@ Archive::Archive(std::string& path) {
 
     while (input_stream_.peek() != EOF) {
         File new_file;
+        new_file.shift_fileheader = input_stream_.tellg();
         new_file.name_len = DecodeNum(sizeof(new_file.name_len), *this);
         new_file.name = DecodeString(new_file.name_len, *this);
         new_file.size_e = DecodeNum(sizeof(new_file.size_e), *this);
         new_file.padding = DecodeNum(sizeof(new_file.padding), *this);
         new_file.SetPath(path_);
-        new_file.shift = input_stream_.tellg();
+        new_file.shift_filedata = input_stream_.tellg();
 
         files[new_file.name] = new_file;
-        file_num_++;
         input_stream_.seekg(new_file.size_e, std::ios::cur);
     }
     CloseInputStream();
@@ -49,23 +48,23 @@ Archive::Archive(std::string& path) {
 void Archive::Create(std::string& path, std::vector<std::string>& filepaths,
                      uint16_t block_length) {
     path_ = path;
-    block_length_ = block_length;GetEncodedLength(block_length);
-    file_num_ = filepaths.size();
+    block_length_ = block_length;
     OpenOutputStream();
 
     // archive header
     EncodeNum(block_length_, *this);
 
     // write files into archive
-    for (int i = 0; i < file_num_; ++i) {
+    for (int i = 0; i < filepaths.size(); ++i) {
         AddFile(filepaths[i]);
     }
     CloseOutputStream();
 }
 
-void Archive::AddFile(std::string& filepath) {
+void Archive::AddFile(const std::string& filepath) {
     OpenOutputStream();
     File new_file(filepath);
+    new_file.shift_fileheader = output_stream_.tellp();
 
     // FileHeader
     EncodeNum(new_file.name_len, *this); // length of decoded filename
@@ -74,8 +73,7 @@ void Archive::AddFile(std::string& filepath) {
     size_t ind = output_stream_.tellp();
     output_stream_.seekp(ind + sizeof(new_file.size_e) * 2 +
                          sizeof(new_file.padding) * 2);
-
-    new_file.shift = output_stream_.tellp();
+    new_file.shift_filedata = output_stream_.tellp();
     EncodeFile(new_file, block_length_, *this);
 
     output_stream_.seekp(ind);
@@ -149,7 +147,71 @@ Archive::~Archive() {
 void Archive::Extract(std::string& filename) {
     File file = files[filename];
     OpenInputStream();
-    input_stream_.seekg(file.shift);
+    input_stream_.seekg(file.shift_filedata);
     DecodeFile(file, block_length_, *this, file.size_e);
     CloseInputStream();
+}
+
+void Archive::Merge(Archive& first, Archive& second, uint16_t block_length) {
+    block_length_ = block_length;
+    files.clear();
+
+    OpenOutputStream();
+    EncodeNum(block_length, *this);
+
+    AddArchive(first);
+    AddArchive(second);
+
+    CloseOutputStream();
+}
+
+void Archive::ExtractTo(const std::string& filename,
+                        const std::string& where_to) {
+    File file = files[filename];
+    file.path = where_to;
+    OpenInputStream();
+    input_stream_.seekg(file.shift_filedata);
+    DecodeFile(file, block_length_, *this, file.size_e);
+    CloseInputStream();
+}
+
+void Archive::AddArchive(Archive& new_archive) {
+    new_archive.OpenInputStream();
+
+    for (auto elem: files) {
+        ExtractTo(elem.first, "tmp.txt");
+        AddFile("tmp.txt");
+    }
+    new_archive.CloseInputStream();
+}
+
+void Archive::RemoveFile(const std::string& filename) {
+
+    File remove_file = files[filename];
+    files.erase(filename);
+    OpenInputStream();
+
+    uint64_t erase_from = remove_file.shift_fileheader;
+    uint64_t erase_to = remove_file.shift_filedata + remove_file.size_e;
+
+    std::string new_archive_name = "tmp.haf";
+    std::ofstream new_archive;
+    new_archive.open(new_archive_name, std::ios::out | std::ios::binary);
+
+    while (input_stream_.tellg() < erase_from) {
+        char buf[1];
+        input_stream_.read(buf, 1);
+        new_archive.write(buf, 1);
+    }
+    input_stream_.seekg(erase_to);
+    while (input_stream_.peek() != EOF) {
+        char buf[1];
+        input_stream_.read(buf, 1);
+        new_archive.write(buf, 1);
+    }
+    new_archive.close();
+    CloseInputStream();
+    std::string name = path_.substr(path_.find_last_of("/\\") + 1);
+    std::remove(path_.c_str());
+    std::rename(new_archive_name.c_str(), name.c_str());
 }

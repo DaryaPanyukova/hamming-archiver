@@ -14,10 +14,11 @@ public:
     uint64_t size_e; // size of encoded file, bytes
     uint8_t padding; // bits
     uint8_t name_len; // length of the decoded filename
-    uint64_t shift; // position in archive
+    uint64_t shift_filedata; // position in archive
+    uint64_t shift_fileheader;
     File() = default;
 
-    File(std::string& file_path);
+    File(const std::string& file_path);
 
     File(std::string& file_name, uint16_t file_size);
 

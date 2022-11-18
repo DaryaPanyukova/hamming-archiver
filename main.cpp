@@ -61,8 +61,12 @@ int main(int argc, char** argv) {
             archive.AddFile(path);
         }
     } else if (options.del) {
-        // TODO
+        for (auto path: filepaths) {
+            archive.RemoveFile(path);
+        }
     } else if (options.concatenate) {
-        // TODO
+        Archive first(filepaths[0]);
+        Archive second(filepaths[1]);
+        archive.Merge(first, second, block_size);
     }
 }

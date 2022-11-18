@@ -9,9 +9,7 @@
 
 class Archive {
 private:
-   // std::vector<File> files_list_;
     std::map <std::string, File> files;
-    uint64_t file_num_;
     std::string path_;
     uint16_t block_length_;
     std::ifstream input_stream_;
@@ -24,9 +22,11 @@ public:
 
     ~Archive();
 
-    void Create(std::string& path, std::vector<std::string>& filepaths, uint16_t block_length);
+    void Create(std::string& path, std::vector<std::string>& filepaths, uint16_t block_length = 4);
 
-    void AddFile(std::string& filepath);
+    void AddFile(const std::string& filepath);
+
+    void AddArchive(Archive& new_archive);
 
     void PrintFileList();
 
@@ -43,6 +43,12 @@ public:
     void OpenOutputStream();
 
     void Extract(std::string& filename);
+
+    void ExtractTo(const std::string& filename, const std::string& where_to);
+
+    void Merge(Archive& first, Archive& second, uint16_t block_length = 4);
+
+    void RemoveFile(const std::string& filename);
 };
 
 
