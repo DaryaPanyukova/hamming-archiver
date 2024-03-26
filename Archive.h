@@ -23,7 +23,7 @@ public:
 
     ~Archive();
 
-    void Create(const std::string& path, std::vector<std::string>& filepaths,
+    void Create(const std::string& path, const std::vector<std::string>& filepaths,
                 uint16_t block_length = 4);
 
     void AddFile(const std::string& filepath);

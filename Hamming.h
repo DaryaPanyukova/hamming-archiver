@@ -4,7 +4,7 @@
 #include <fstream>
 
 
-void AddChar(std::vector<bool>& dest, char sym) {
+inline void AddChar(std::vector<bool>& dest, char sym) {
     for (uint8_t i = 8; i-- > 0;) {
         int res = (sym & (1 << i)) >> i;
         dest.push_back(res);

@@ -1,0 +1,3 @@
+D:/ITMOlabs/basics_c++/labwork-4-DaryaPanyukova/cmake-build-debug/CMakeFiles/labwork_4_DaryaPanyukova.dir
+D:/ITMOlabs/basics_c++/labwork-4-DaryaPanyukova/cmake-build-debug/CMakeFiles/edit_cache.dir
+D:/ITMOlabs/basics_c++/labwork-4-DaryaPanyukova/cmake-build-debug/CMakeFiles/rebuild_cache.dir

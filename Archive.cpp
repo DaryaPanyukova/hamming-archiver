@@ -53,7 +53,7 @@ Archive::Archive(const std::string& path) {
 }
 
 void Archive::Create(const std::string& path,
-                     std::vector<std::string>& filepaths, uint16_t block_length) {
+                     const std::vector<std::string>& filepaths, uint16_t block_length) {
     filename_ = path;
     block_length_ = block_length;
     OpenOutputStream();
@@ -181,7 +181,7 @@ void Archive::ExtractTo(const std::string& filename,
 void Archive::AddArchive(Archive& new_archive) {
     new_archive.OpenInputStream();
 
-    for (auto elem: new_archive.files) {
+    for (const auto& elem: new_archive.files) {
         std::string tmp_file = path_ + elem.first;
         new_archive.ExtractTo(elem.first, tmp_file);
         AddFile(tmp_file);
